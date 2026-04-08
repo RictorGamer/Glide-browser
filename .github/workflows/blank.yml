@@ -1,0 +1,37 @@
+name: Build Windows Executable
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install PyQt6 PyQt6-WebEngine pyinstaller
+
+    - name: Build with PyInstaller
+      run: |
+        # Используем флаг --collect-all для гарантии сборки всех бинарников движка
+        python -m PyInstaller --noconfirm --onedir --windowed --collect-all PyQt6 --collect-all PyQt6.QtWebEngineWidgets app.py
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Browser-Windows-Build
+        path: dist/app/
