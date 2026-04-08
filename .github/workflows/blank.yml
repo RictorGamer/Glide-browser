@@ -3,8 +3,6 @@ name: Build Windows Executable
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   build:
@@ -18,7 +16,6 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.13'
-        cache: 'pip'
 
     - name: Install dependencies
       run: |
@@ -27,11 +24,18 @@ jobs:
 
     - name: Build with PyInstaller
       run: |
-        # Используем флаг --collect-all для гарантии сборки всех бинарников движка
         python -m PyInstaller --noconfirm --onedir --windowed --collect-all PyQt6 --collect-all PyQt6.QtWebEngineWidgets app.py
+
+    # Шаг архивации: превращаем 3770 файлов в один архив
+    - name: Archive build
+      shell: pwsh
+      run: |
+        Compress-Archive -Path dist/app/* -DestinationPath browser_windows_x64.zip
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: Browser-Windows-Build
-        path: dist/app/
+        path: browser_windows_x64.zip
+        # Сокращаем срок хранения до 1 дня, чтобы не забивать квоту
+        retention-days: 1
