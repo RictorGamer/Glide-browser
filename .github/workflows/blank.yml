@@ -24,7 +24,7 @@ jobs:
 
     - name: Build with PyInstaller
       run: |
-        python -m PyInstaller --noconfirm --onedir --windowed --collect-all PyQt6 --collect-all PyQt6.QtWebEngineWidgets app.py
+        python -m PyInstaller --noconfirm --onefile --windowed --collect-all PyQt6 --collect-all PyQt6.QtWebEngineWidgets app.py
 
     # Шаг архивации: превращаем 3770 файлов в один архив
     - name: Archive build
