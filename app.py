@@ -1344,7 +1344,7 @@ class BrowserApp(QMainWindow):
         else:
             # Передаем self (BrowserApp) как parent_window
             prof = self.profile_manager.get_profile(container_name,self)
-            custom_ua = self.config.get("user_agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "AppleWebKit/537.36 (KHTML, like Gecko)" "Chrome/139.0.0.0 Safari/537.36").strip()
+            custom_ua = self.config.get("user_agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" " AppleWebKit/537.36 (KHTML, like Gecko)" " Chrome/140.0.0.0 Safari/537.36").strip()
             if custom_ua:
                 prof.setHttpUserAgent(custom_ua)
             try:
@@ -1380,6 +1380,7 @@ class BrowserApp(QMainWindow):
         page.settings().setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled,True)
         page.settings().setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, True)
         page.settings().setAttribute(QWebEngineSettings.WebAttribute.PlaybackRequiresUserGesture, False)
+        page.settings().setAttribute(QWebEngineSettings.WebAttribute.ScreenCaptureEnabled, True)
         page.fullScreenRequested.connect(self.handle_fullscreen)
         page.settings().setAttribute(QWebEngineSettings.WebAttribute.FullScreenSupportEnabled, True)
         browser.titleChanged.connect(lambda t, b=browser: self.tabs.setTabText(self.tabs.indexOf(b), (t[:20] if t.strip()else "Glide")))
@@ -2183,7 +2184,7 @@ class BrowserApp(QMainWindow):
         if saved_perm is not None:
             policy = QWebEnginePage.PermissionPolicy.PermissionGrantedByUser if saved_perm else QWebEnginePage.PermissionPolicy.PermissionDeniedByUser
             page.setFeaturePermission(url, feature, policy)
-            if saved_perm and feature in (QWebEnginePage.Feature.MediaAudioCapture, QWebEnginePage.Feature.MediaAudioVideoCapture):
+            if saved_perm and feature in (QWebEnginePage.Feature.MediaAudioCapture, QWebEnginePage.Feature.MediaAudioVideoCapture,QWebEnginePage.Feature.DesktopAudioVideoCapture):
                 self.set_mic_indicator(True)
             return
 
@@ -2192,6 +2193,8 @@ class BrowserApp(QMainWindow):
             QWebEnginePage.Feature.MediaVideoCapture: "камере",
             QWebEnginePage.Feature.MediaAudioVideoCapture: "камере и микрофону",
             QWebEnginePage.Feature.Geolocation: "геолокации",
+            QWebEnginePage.Feature.DesktopVideoCapture: "демонстрация экрана",
+            QWebEnginePage.Feature.DesktopAudioVideoCapture: "демонстрация экрана и звуку",
         }
         feature_name = features_map.get(feature, "системным функциям")
 
@@ -2248,7 +2251,6 @@ class BrowserApp(QMainWindow):
         except Exception as e:
             print(f"Ошибка сохранения истории: {e}")
 
-    # Заменяем старый record_history
     def record_history(self, browser):
         url = browser.url().toString()
         title = browser.title()
@@ -2339,12 +2341,9 @@ class BrowserApp(QMainWindow):
 
     def _on_download_state_changed(self, state, download_item):
         """Обработчик завершения или отмены загрузки."""
-    # QWebEngineDownloadRequest.DownloadState.DownloadCompleted = 2
-    # QWebEngineDownloadRequest.DownloadState.DownloadCancelled = 3
         if state in (2, 3): 
             self.save_download_to_history(download_item)
         
-        # КРИТИЧНО ДЛЯ ПАМЯТИ: Удаляем объект из списка, позволяя сборщику мусора очистить ОЗУ
             if download_item in self.download_list:
                 self.download_list.remove(download_item)
                 download_item.deleteLater()
@@ -2376,7 +2375,6 @@ class BrowserApp(QMainWindow):
                     QApplication.instance().setStyleSheet(style)
                 self.config["theme_path"] = theme_path
                 save_json(SETTINGS_FILE, self.config)
-                #self.apply_settings()
             else:
                 print(f"Файл не найден {theme_path}")
         except Exception as e:
